@@ -1,0 +1,1 @@
+export { RoomTable } from "./RoomTable";

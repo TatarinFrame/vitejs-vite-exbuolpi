@@ -6,10 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
+    "axios": "^1.20.0",
+    "clsx": "^2.1.1",
+    "msw": "^3.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
@@ -21,5 +28,10 @@
     "oxlint": "^1.85.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.1"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
