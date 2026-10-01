@@ -7,21 +7,10 @@ import { Header } from "./components/Header";
 import { RoomTable } from "./components/RoomTable";
 
 export default function App() {
-  return (
-    <>
-      <Header
-        activeNavId="catalog"
-        onNavigate={(id) => console.log("goto", id)}
-        onBellClick={() => console.log("bell")}
-      />
-      <Container maxWidth="lg">
-        <Box sx={{ my: 3 }}>
-          <RoomTable />
-        </Box>
-      </Container>
-    </>
-  );
-}
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('room-assets-data');
+    return saved ? JSON.parse(saved) : initialData;
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
@@ -45,33 +34,21 @@ export default function App() {
 
   const handleExportJSON = () => {
     const json = JSON.stringify(data, null, 2);
-
-    const blob = new Blob([json], {
-      type: 'application/json',
-    });
-
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
     link.href = url;
     link.download = 'room-assets-data.json';
-
     link.click();
-
     URL.revokeObjectURL(url);
   };
 
-  const handleImportJSON = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImportJSON = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    if (!file) return;
 
-    if (!file) {
-      return;
-    }
     const importMode = window.confirm(
-      'OK — заменить все текущие данные.\n\n' +
-        'Отмена — объединить импортированные данные с текущими.'
+      'OK — заменить все текущие данные.\n\nОтмена — объединить импортированные данные с текущими.'
     )
       ? 'replace'
       : 'merge';
@@ -117,16 +94,12 @@ export default function App() {
       }
 
       const roomIds = new Set(importedData.rooms.map((room: any) => room.id));
-
-      const assetIds = new Set(
-        importedData.assets.map((asset: any) => asset.id)
-      );
+      const assetIds = new Set(importedData.assets.map((asset: any) => asset.id));
 
       for (const booking of importedData.bookings) {
         if (
           typeof booking.id !== 'string' ||
-          (booking.resourceType !== 'room' &&
-            booking.resourceType !== 'asset') ||
+          (booking.resourceType !== 'room' && booking.resourceType !== 'asset') ||
           typeof booking.resourceId !== 'string' ||
           typeof booking.title !== 'string' ||
           typeof booking.start !== 'string' ||
@@ -143,21 +116,13 @@ export default function App() {
             : assetIds.has(booking.resourceId);
 
         if (!resourceExists) {
-          alert(
-            `Ошибка: ресурс для бронирования "${booking.title}" не найден.`
-          );
+          alert(`Ошибка: ресурс для бронирования "${booking.title}" не найден.`);
           return;
         }
 
         const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
-
-        if (
-          !isoDateRegex.test(booking.start) ||
-          !isoDateRegex.test(booking.end)
-        ) {
-          alert(
-            `Ошибка: время бронирования "${booking.title}" должно быть в UTC ISO-формате.`
-          );
+        if (!isoDateRegex.test(booking.start) || !isoDateRegex.test(booking.end)) {
+          alert(`Ошибка: время бронирования "${booking.title}" должно быть в UTC ISO-формате.`);
           return;
         }
 
@@ -175,25 +140,16 @@ export default function App() {
           const a = importedData.bookings[i];
           const b = importedData.bookings[j];
 
-          if (
-            a.resourceType === b.resourceType &&
-            a.resourceId === b.resourceId
-          ) {
+          if (a.resourceType === b.resourceType && a.resourceId === b.resourceId) {
             const aStart = new Date(a.start).getTime();
             const aEnd = new Date(a.end).getTime();
-
             const bStart = new Date(b.start).getTime();
             const bEnd = new Date(b.end).getTime();
 
-            const hasOverlap = aStart < bEnd && aEnd > bStart;
-
-            if (hasOverlap) {
+            if (aStart < bEnd && aEnd > bStart) {
               alert(
-                `Ошибка: найдены пересекающиеся бронирования:\n\n` +
-                  `"${a.title}"\n` +
-                  `"${b.title}"`
+                `Ошибка: найдены пересекающиеся бронирования:\n\n"${a.title}"\n"${b.title}"`
               );
-
               return;
             }
           }
@@ -202,33 +158,15 @@ export default function App() {
 
       if (importMode === 'replace') {
         setData(importedData);
-
-        alert(
-          'Импорт завершён.\n\n' +
-            'Все текущие данные заменены импортированными.'
-        );
+        alert('Импорт завершён.\n\nВсе текущие данные заменены импортированными.');
       } else {
-        const existingBookingIds = new Set(
-          data.bookings.map((booking: any) => booking.id)
-        );
+        const existingBookingIds = new Set(data.bookings.map((b: any) => b.id));
+        const existingRoomIds = new Set(data.rooms.map((r: any) => r.id));
+        const existingAssetIds = new Set(data.assets.map((a: any) => a.id));
 
-        const existingRoomIds = new Set(data.rooms.map((room: any) => room.id));
-
-        const existingAssetIds = new Set(
-          data.assets.map((asset: any) => asset.id)
-        );
-
-        const newRooms = importedData.rooms.filter(
-          (room: any) => !existingRoomIds.has(room.id)
-        );
-
-        const newAssets = importedData.assets.filter(
-          (asset: any) => !existingAssetIds.has(asset.id)
-        );
-
-        const newBookings = importedData.bookings.filter(
-          (booking: any) => !existingBookingIds.has(booking.id)
-        );
+        const newRooms = importedData.rooms.filter((r: any) => !existingRoomIds.has(r.id));
+        const newAssets = importedData.assets.filter((a: any) => !existingAssetIds.has(a.id));
+        const newBookings = importedData.bookings.filter((b: any) => !existingBookingIds.has(b.id));
 
         setData({
           rooms: [...data.rooms, ...newRooms],
@@ -237,10 +175,7 @@ export default function App() {
         });
 
         alert(
-          'Импорт завершён.\n\n' +
-            `Добавлено комнат: ${newRooms.length}\n` +
-            `Добавлено оборудования: ${newAssets.length}\n` +
-            `Добавлено бронирований: ${newBookings.length}`
+          `Импорт завершён.\n\nДобавлено комнат: ${newRooms.length}\nДобавлено оборудования: ${newAssets.length}\nДобавлено бронирований: ${newBookings.length}`
         );
       }
     } catch {
@@ -259,7 +194,6 @@ export default function App() {
 
   const handleEditBooking = (booking: any) => {
     setEditingBookingId(booking.id);
-
     setResourceType(booking.resourceType);
     setResourceId(booking.resourceId);
     setTitle(booking.title);
@@ -269,30 +203,21 @@ export default function App() {
 
     setStart(startDate.toISOString().slice(0, 16));
     setEnd(endDate.toISOString().slice(0, 16));
-
     setNotes(booking.notes || '');
-
     setShowForm(true);
   };
 
   const handleDeleteBooking = (id: string) => {
-    const confirmed = window.confirm(
-      'Вы действительно хотите удалить это бронирование?'
-    );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!window.confirm('Вы действительно хотите удалить это бронирование?')) return;
 
     setData({
       ...data,
-      bookings: data.bookings.filter((booking: any) => booking.id !== id),
+      bookings: data.bookings.filter((b: any) => b.id !== id),
     });
   };
 
   const handleResourceTypeChange = (type: 'room' | 'asset') => {
     setResourceType(type);
-
     if (type === 'room') {
       setResourceId(data.rooms[0]?.id || '');
     } else {
@@ -325,21 +250,12 @@ export default function App() {
     }
 
     const hasConflict = data.bookings.some((booking: any) => {
-      if (booking.id === editingBookingId) {
-        return false;
-      }
-
-      if (booking.resourceType !== resourceType) {
-        return false;
-      }
-
-      if (booking.resourceId !== resourceId) {
-        return false;
-      }
+      if (booking.id === editingBookingId) return false;
+      if (booking.resourceType !== resourceType) return false;
+      if (booking.resourceId !== resourceId) return false;
 
       const existingStart = new Date(booking.start).getTime();
       const existingEnd = new Date(booking.end).getTime();
-
       const newStart = startDate.getTime();
       const newEnd = endDate.getTime();
 
@@ -348,21 +264,12 @@ export default function App() {
 
     if (hasConflict) {
       const conflictingBookings = data.bookings.filter((booking: any) => {
-        if (booking.id === editingBookingId) {
-          return false;
-        }
-
-        if (booking.resourceType !== resourceType) {
-          return false;
-        }
-
-        if (booking.resourceId !== resourceId) {
-          return false;
-        }
+        if (booking.id === editingBookingId) return false;
+        if (booking.resourceType !== resourceType) return false;
+        if (booking.resourceId !== resourceId) return false;
 
         const existingStart = new Date(booking.start).getTime();
         const existingEnd = new Date(booking.end).getTime();
-
         const newStart = startDate.getTime();
         const newEnd = endDate.getTime();
 
@@ -373,27 +280,19 @@ export default function App() {
         .map((booking: any) => {
           const startText = new Date(booking.start).toLocaleString();
           const endText = new Date(booking.end).toLocaleString();
-
           return `• ${booking.title}\n  ${startText} — ${endText}`;
         })
         .join('\n\n');
 
       alert(
-        `Ресурс уже забронирован на это время.\n\n` +
-          `Конфликтующие бронирования:\n\n` +
-          `${conflictText}\n\n` +
-          `Выберите другое время.`
+        `Ресурс уже забронирован на это время.\n\nКонфликтующие бронирования:\n\n${conflictText}\n\nВыберите другое время.`
       );
-
       return;
     }
 
     if (editingBookingId) {
       const updatedBookings = data.bookings.map((booking: any) => {
-        if (booking.id !== editingBookingId) {
-          return booking;
-        }
-
+        if (booking.id !== editingBookingId) return booking;
         return {
           ...booking,
           resourceType,
@@ -405,15 +304,10 @@ export default function App() {
         };
       });
 
-      setData({
-        ...data,
-        bookings: updatedBookings,
-      });
-
+      setData({ ...data, bookings: updatedBookings });
       setEditingBookingId(null);
       resetForm();
       setShowForm(false);
-
       alert('Бронирование успешно изменено!');
       return;
     }
@@ -435,20 +329,16 @@ export default function App() {
 
     resetForm();
     setShowForm(false);
-
     alert('Бронирование успешно создано!');
   };
 
   const filteredBookings = data.bookings.filter((booking: any) => {
     const searchText = search.toLowerCase();
-
     const matchesSearch =
       booking.title.toLowerCase().includes(searchText) ||
       booking.notes.toLowerCase().includes(searchText);
-
     const matchesResource =
       filterResource === 'all' || booking.resourceId === filterResource;
-
     const matchesDate =
       !filterDate || booking.start.slice(0, 10) === filterDate;
 
@@ -457,21 +347,30 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>Room&Assets</h1>
+      <Header
+        activeNavId="catalog"
+        onNavigate={(id) => console.log("goto", id)}
+        onBellClick={() => console.log("bell")}
+      />
 
-        <div className="header-buttons">
+      <main className="container">
+        <Box sx={{ my: 3 }}>
+        <div>Таблица грузится...</div>
+        </Box>
+
+        <div className="top-actions" style={{ display: 'flex', gap: '10px' }}>
+          <button className="primary-button" onClick={() => setShowForm(true)}>
+            + Добавить бронирование
+          </button>
           <button className="secondary-button" onClick={handleExportJSON}>
             Экспорт JSON
           </button>
-
           <button
             className="secondary-button"
             onClick={() => fileInputRef.current?.click()}
           >
             Импорт JSON
           </button>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -479,18 +378,6 @@ export default function App() {
             style={{ display: 'none' }}
             onChange={handleImportJSON}
           />
-
-          <button className="primary-button" onClick={() => setShowForm(true)}>
-            + Добавить бронирование
-          </button>
-        </div>
-      </header>
-
-      <main className="container">
-        <div className="top-actions">
-          <button className="primary-button" onClick={() => setShowForm(true)}>
-            + Добавить бронирование
-          </button>
         </div>
 
         {showForm && (
@@ -504,7 +391,6 @@ export default function App() {
             <div className="form-grid">
               <div className="form-group">
                 <label>Тип ресурса</label>
-
                 <select
                   value={resourceType}
                   onChange={(e) =>
@@ -518,7 +404,6 @@ export default function App() {
 
               <div className="form-group">
                 <label>Ресурс</label>
-
                 <select
                   value={resourceId}
                   onChange={(e) => setResourceId(e.target.value)}
@@ -539,7 +424,6 @@ export default function App() {
 
               <div className="form-group">
                 <label>Название</label>
-
                 <input
                   type="text"
                   placeholder="Например: Семинар"
@@ -550,7 +434,6 @@ export default function App() {
 
               <div className="form-group">
                 <label>Начало</label>
-
                 <input
                   type="datetime-local"
                   value={start}
@@ -560,7 +443,6 @@ export default function App() {
 
               <div className="form-group">
                 <label>Окончание</label>
-
                 <input
                   type="datetime-local"
                   value={end}
@@ -570,7 +452,6 @@ export default function App() {
 
               <div className="form-group">
                 <label>Примечание</label>
-
                 <textarea
                   placeholder="Дополнительная информация"
                   value={notes}
@@ -581,11 +462,8 @@ export default function App() {
 
             <div className="form-actions">
               <button className="primary-button" onClick={handleCreateBooking}>
-                {editingBookingId
-                  ? 'Сохранить изменения'
-                  : 'Создать бронирование'}
+                {editingBookingId ? 'Сохранить изменения' : 'Создать бронирование'}
               </button>
-
               <button
                 className="secondary-button"
                 onClick={() => {
@@ -600,11 +478,10 @@ export default function App() {
         )}
 
         <section className="section">
-          <h2>Помещения</h2>
+          <h2>Бронирования</h2>
           <div className="filters">
             <div className="filter-group">
               <label>Поиск</label>
-
               <input
                 type="text"
                 placeholder="Название или примечание..."
@@ -615,13 +492,11 @@ export default function App() {
 
             <div className="filter-group">
               <label>Ресурс</label>
-
               <select
                 value={filterResource}
                 onChange={(e) => setFilterResource(e.target.value)}
               >
                 <option value="all">Все ресурсы</option>
-
                 <optgroup label="Помещения">
                   {data.rooms.map((room: any) => (
                     <option key={room.id} value={room.id}>
@@ -629,7 +504,6 @@ export default function App() {
                     </option>
                   ))}
                 </optgroup>
-
                 <optgroup label="Инвентарь">
                   {data.assets.map((asset: any) => (
                     <option key={asset.id} value={asset.id}>
@@ -642,7 +516,6 @@ export default function App() {
 
             <div className="filter-group">
               <label>Дата</label>
-
               <input
                 type="date"
                 value={filterDate}
@@ -662,42 +535,6 @@ export default function App() {
             </button>
           </div>
 
-          <div className="cards">
-            {data.rooms.map((room: any) => (
-              <div className="card" key={room.id}>
-                <h3>{room.name}</h3>
-
-                <p>
-                  Вместимость: <strong>{room.capacity}</strong>
-                </p>
-
-                <p>Возможности: {room.features.join(', ')}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="section">
-          <h2>Инвентарь</h2>
-
-          <div className="cards">
-            {data.assets.map((asset: any) => (
-              <div className="card" key={asset.id}>
-                <h3>{asset.name}</h3>
-
-                <p>
-                  Код: <strong>{asset.inventoryCode}</strong>
-                </p>
-
-                <p>Статус: {asset.status}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="section">
-          <h2>Бронирования</h2>
-
           {data.bookings.length === 0 ? (
             <p>Пока нет бронирований</p>
           ) : filteredBookings.length === 0 ? (
@@ -707,15 +544,11 @@ export default function App() {
               {filteredBookings.map((booking: any) => (
                 <div className="card booking-card" key={booking.id}>
                   <h3>{booking.title}</h3>
-
                   <p>
                     Ресурс: <strong>{booking.resourceId}</strong>
                   </p>
-
                   <p>Начало: {new Date(booking.start).toLocaleString()}</p>
-
                   <p>Окончание: {new Date(booking.end).toLocaleString()}</p>
-
                   {booking.notes && <p>Примечание: {booking.notes}</p>}
 
                   <div className="booking-actions">
@@ -725,7 +558,6 @@ export default function App() {
                     >
                       Редактировать
                     </button>
-
                     <button
                       className="delete-button"
                       onClick={() => handleDeleteBooking(booking.id)}
@@ -741,3 +573,4 @@ export default function App() {
       </main>
     </div>
   );
+}
