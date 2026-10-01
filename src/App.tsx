@@ -1,6 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { initialData } from './data/initialData';
 import './App.css';
+import { Container, Box } from "@mui/material";
+import { Header } from "./components/Header";
+import { RoomTable } from "./components/RoomTable";
+
+export default function App() {
+  return (
+    <>
+      <Header
+        activeNavId="catalog"
+        onNavigate={(id) => console.log("goto", id)}
+        onBellClick={() => console.log("bell")}
+      />
+      <Container maxWidth="lg">
+        <Box sx={{ my: 2 }}>
+          <RoomTable />
+        </Box>
+      </Container>
+    </>
+  );
+}
+
 
 function App() {
   const [data, setData] = useState(() => {

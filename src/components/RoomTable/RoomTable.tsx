@@ -4,7 +4,7 @@ import {
   Chip, CircularProgress, Box, IconButton, Stack, Typography
 } from "@mui/material";
 import { VisibilityOutlined, EditOutlined, DeleteOutline, Groups2Outlined } from "@mui/icons-material";
-import { fetchRooms } from "../../api/roomsApi";
+import { fetchRooms, type RoomDto } from "../../api/roomsApi";
 
 const STATUS_LABEL: Record<RoomDto["status"], string> = {
   available: "Доступна",
@@ -26,7 +26,7 @@ const EQUIP_LABEL: Record<string, string> = {
   board: "Доска",
 };
 
-export function RoomsTable() {
+export function RoomTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<RoomDto[]>([]);
@@ -81,9 +81,7 @@ export function RoomsTable() {
             <TableRow key={r.id} hover>
               <TableCell sx={{ color: "text.secondary" }}>{r.code}</TableCell>
               <TableCell>
-                <Stack spacing={0.5}>
-                  <Typography fontWeight={600}>{r.name}</Typography>
-                </Stack>
+                <Typography fontWeight={600}>{r.name}</Typography>
               </TableCell>
               <TableCell align="right">
                 <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
