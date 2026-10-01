@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: '/vitejs-vite-exbuolpi/',
+  base: command === 'build' ? '/vitejs-vite-exbuolpi/' : '/',
   optimizeDeps: {
-    // Исключаем библиотеки, вызывающие OOM в WASM-компиляторе WebContainer
-    exclude: ['@mui/material', '@mui/icons-material', 'msw'],
+    include: [
+      '@emotion/react',
+      '@emotion/styled',
+      'hoist-non-react-statics',
+    ],
   },
-});
+}));

@@ -1,5 +1,6 @@
-import type { NavItem } from "./header.types";
-import { ListAltOutlined, EventNoteOutlined, SettingsOutlined } from "@mui/icons-material";
+import ListAltOutlined from "@mui/icons-material/ListAltOutlined";
+import EventNoteOutlined from "@mui/icons-material/EventNoteOutlined";
+import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 
 export const DEFAULT_NAV: NavItem[] = [
   { id: "catalog", label: "Каталог аудиторий", icon: ListAltOutlined },

@@ -3,7 +3,10 @@ import {
   Paper, Table, TableHead, TableRow, TableCell, TableBody,
   Chip, CircularProgress, Box, IconButton, Stack, Typography
 } from "@mui/material";
-import { VisibilityOutlined, EditOutlined, DeleteOutline, Groups2Outlined } from "@mui/icons-material";
+import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import DeleteOutlined from "@mui/icons-material/DeleteOutlined";
+import Groups2Outlined from "@mui/icons-material/Groups2Outlined";
 import { fetchRooms, type RoomDto } from "../../api/roomsApi";
 
 const STATUS_LABEL: Record<RoomDto["status"], string> = {

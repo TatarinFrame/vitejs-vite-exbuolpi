@@ -4,7 +4,6 @@ import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './context/auth';
 
-// 1. Гарантированный синхронный рендер приложения
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
@@ -13,19 +12,19 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 );
 
-// 2. Безопасный фоновый запуск MSW с перехватом ошибок
+// Фоновый запуск MSW: ошибки не должны ронять приложение
 if (import.meta.env.DEV) {
   import('./mocks/browser')
-    .then(({ worker }) => {
-      return worker.start({
+    .then(({ worker }) =>
+      worker.start({
         onUnhandledRequest: 'bypass',
         quiet: true,
         serviceWorker: {
-          url: '/mockServiceWorker.js',
+          url: `${import.meta.env.BASE_URL}mockServiceWorker.js`,
         },
-      });
-    })
+      })
+    )
     .catch((err) => {
-      console.warn('MSW warning bypassed in container:', err);
+      console.warn('MSW не запустился:', err);
     });
 }

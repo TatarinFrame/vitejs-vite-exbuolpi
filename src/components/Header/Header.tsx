@@ -3,7 +3,8 @@ import s from "./Header.module.css";
 import type { NavItem } from "./header.types";
 import { DEFAULT_NAV } from "./header.config";
 import { useAuth } from "../../context/auth"; // Путь к вашему auth.tsx
-import { DomainRounded, NotificationsNoneOutlined } from "@mui/icons-material";
+import DomainRounded from "@mui/icons-material/DomainRounded";
+import NotificationsNoneOutlined from "@mui/icons-material/NotificationsNoneOutlined";
 
 export function Header({
   navItems = DEFAULT_NAV,
