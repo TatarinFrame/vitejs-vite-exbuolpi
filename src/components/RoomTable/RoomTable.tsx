@@ -49,7 +49,7 @@ export function RoomTable() {
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: "grid", placeItems: "center" }}>
+      <Box sx={{ p: 4, display: "grid", placeItems: "center" }}>
         <CircularProgress />
       </Box>
     );

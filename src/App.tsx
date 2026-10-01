@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { initialData } from './data/initialData';
 import './App.css';
+
 import { Container, Box } from "@mui/material";
 import { Header } from "./components/Header";
 import { RoomTable } from "./components/RoomTable";
 
-export function App() {
+export default function App() {
   return (
     <>
       <Header
@@ -14,38 +15,24 @@ export function App() {
         onBellClick={() => console.log("bell")}
       />
       <Container maxWidth="lg">
-        <Box sx={{ my: 2 }}>
+        <Box sx={{ my: 3 }}>
           <RoomTable />
         </Box>
       </Container>
     </>
   );
 }
-export default App;
-
-function App() {
-  const [data, setData] = useState(() => {
-    const savedData = localStorage.getItem('room-assets-data');
-
-    if (savedData) {
-      try {
-        return JSON.parse(savedData);
-      } catch {
-        return initialData;
-      }
-    }
-
-    return initialData;
-  });
 
   const [showForm, setShowForm] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterResource, setFilterResource] = useState('all');
   const [filterDate, setFilterDate] = useState('');
+
   useEffect(() => {
     localStorage.setItem('room-assets-data', JSON.stringify(data));
   }, [data]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [resourceType, setResourceType] = useState<'room' | 'asset'>('room');
@@ -73,6 +60,7 @@ function App() {
 
     URL.revokeObjectURL(url);
   };
+
   const handleImportJSON = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -92,7 +80,6 @@ function App() {
       const text = await file.text();
       const importedData = JSON.parse(text);
 
-      // Проверяем основную структуру JSON
       if (
         !importedData.rooms ||
         !Array.isArray(importedData.rooms) ||
@@ -105,7 +92,6 @@ function App() {
         return;
       }
 
-      // Проверяем комнаты
       for (const room of importedData.rooms) {
         if (
           typeof room.id !== 'string' ||
@@ -118,7 +104,6 @@ function App() {
         }
       }
 
-      // Проверяем оборудование
       for (const asset of importedData.assets) {
         if (
           typeof asset.id !== 'string' ||
@@ -131,16 +116,13 @@ function App() {
         }
       }
 
-      // Собираем ID существующих ресурсов
       const roomIds = new Set(importedData.rooms.map((room: any) => room.id));
 
       const assetIds = new Set(
         importedData.assets.map((asset: any) => asset.id)
       );
 
-      // Проверяем бронирования
       for (const booking of importedData.bookings) {
-        // Проверяем структуру бронирования
         if (
           typeof booking.id !== 'string' ||
           (booking.resourceType !== 'room' &&
@@ -155,7 +137,6 @@ function App() {
           return;
         }
 
-        // Проверяем существование ресурса
         const resourceExists =
           booking.resourceType === 'room'
             ? roomIds.has(booking.resourceId)
@@ -168,7 +149,6 @@ function App() {
           return;
         }
 
-        // Проверяем UTC ISO-формат
         const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 
         if (
@@ -184,14 +164,12 @@ function App() {
         const start = new Date(booking.start);
         const end = new Date(booking.end);
 
-        // Проверяем корректность времени
         if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
           alert(`Ошибка во времени бронирования "${booking.title}".`);
           return;
         }
       }
 
-      // Проверяем пересечения бронирований
       for (let i = 0; i < importedData.bookings.length; i++) {
         for (let j = i + 1; j < importedData.bookings.length; j++) {
           const a = importedData.bookings[i];
@@ -222,7 +200,6 @@ function App() {
         }
       }
 
-      // Если все проверки пройдены
       if (importMode === 'replace') {
         setData(importedData);
 
@@ -270,15 +247,16 @@ function App() {
       alert('Ошибка: файл не является корректным JSON.');
     }
 
-    // Сбрасываем выбранный файл
     event.target.value = '';
   };
+
   const resetForm = () => {
     setTitle('');
     setStart('');
     setEnd('');
     setNotes('');
   };
+
   const handleEditBooking = (booking: any) => {
     setEditingBookingId(booking.id);
 
@@ -290,13 +268,13 @@ function App() {
     const endDate = new Date(booking.end);
 
     setStart(startDate.toISOString().slice(0, 16));
-
     setEnd(endDate.toISOString().slice(0, 16));
 
     setNotes(booking.notes || '');
 
     setShowForm(true);
   };
+
   const handleDeleteBooking = (id: string) => {
     const confirmed = window.confirm(
       'Вы действительно хотите удалить это бронирование?'
@@ -308,9 +286,10 @@ function App() {
 
     setData({
       ...data,
-      bookings: data.bookings.filter((booking) => booking.id !== id),
+      bookings: data.bookings.filter((booking: any) => booking.id !== id),
     });
   };
+
   const handleResourceTypeChange = (type: 'room' | 'asset') => {
     setResourceType(type);
 
@@ -340,20 +319,20 @@ function App() {
     const startDate = new Date(start);
     const endDate = new Date(end);
 
-    // Проверяем, что начало раньше окончания
     if (startDate >= endDate) {
       alert('Время начала должно быть раньше времени окончания.');
       return;
     }
 
-    // Проверяем пересечения
-    const hasConflict = data.bookings.some((booking) => {
-      // Проверяем только тот же тип ресурса
+    const hasConflict = data.bookings.some((booking: any) => {
+      if (booking.id === editingBookingId) {
+        return false;
+      }
+
       if (booking.resourceType !== resourceType) {
         return false;
       }
 
-      // Проверяем только тот же ресурс
       if (booking.resourceId !== resourceId) {
         return false;
       }
@@ -364,12 +343,11 @@ function App() {
       const newStart = startDate.getTime();
       const newEnd = endDate.getTime();
 
-      // Пересечение временных интервалов
       return newStart < existingEnd && newEnd > existingStart;
     });
 
     if (hasConflict) {
-      const conflictingBookings = data.bookings.filter((booking) => {
+      const conflictingBookings = data.bookings.filter((booking: any) => {
         if (booking.id === editingBookingId) {
           return false;
         }
@@ -392,7 +370,7 @@ function App() {
       });
 
       const conflictText = conflictingBookings
-        .map((booking) => {
+        .map((booking: any) => {
           const startText = new Date(booking.start).toLocaleString();
           const endText = new Date(booking.end).toLocaleString();
 
@@ -411,7 +389,7 @@ function App() {
     }
 
     if (editingBookingId) {
-      const updatedBookings = data.bookings.map((booking) => {
+      const updatedBookings = data.bookings.map((booking: any) => {
         if (booking.id !== editingBookingId) {
           return booking;
         }
@@ -437,7 +415,6 @@ function App() {
       setShowForm(false);
 
       alert('Бронирование успешно изменено!');
-
       return;
     }
 
@@ -460,18 +437,9 @@ function App() {
     setShowForm(false);
 
     alert('Бронирование успешно создано!');
-
-    setData({
-      ...data,
-      bookings: [...data.bookings, newBooking],
-    });
-
-    resetForm();
-    setShowForm(false);
-
-    alert('Бронирование успешно создано!');
   };
-  const filteredBookings = data.bookings.filter((booking) => {
+
+  const filteredBookings = data.bookings.filter((booking: any) => {
     const searchText = search.toLowerCase();
 
     const matchesSearch =
@@ -519,14 +487,12 @@ function App() {
       </header>
 
       <main className="container">
-        {/* КНОПКА ДОБАВЛЕНИЯ */}
         <div className="top-actions">
           <button className="primary-button" onClick={() => setShowForm(true)}>
             + Добавить бронирование
           </button>
         </div>
 
-        {/* ФОРМА БРОНИРОВАНИЯ */}
         {showForm && (
           <section className="booking-form">
             <h2>
@@ -558,12 +524,12 @@ function App() {
                   onChange={(e) => setResourceId(e.target.value)}
                 >
                   {resourceType === 'room'
-                    ? data.rooms.map((room) => (
+                    ? data.rooms.map((room: any) => (
                         <option key={room.id} value={room.id}>
                           {room.name}
                         </option>
                       ))
-                    : data.assets.map((asset) => (
+                    : data.assets.map((asset: any) => (
                         <option key={asset.id} value={asset.id}>
                           {asset.name}
                         </option>
@@ -633,7 +599,6 @@ function App() {
           </section>
         )}
 
-        {/* ПОМЕЩЕНИЯ */}
         <section className="section">
           <h2>Помещения</h2>
           <div className="filters">
@@ -658,7 +623,7 @@ function App() {
                 <option value="all">Все ресурсы</option>
 
                 <optgroup label="Помещения">
-                  {data.rooms.map((room) => (
+                  {data.rooms.map((room: any) => (
                     <option key={room.id} value={room.id}>
                       {room.name}
                     </option>
@@ -666,7 +631,7 @@ function App() {
                 </optgroup>
 
                 <optgroup label="Инвентарь">
-                  {data.assets.map((asset) => (
+                  {data.assets.map((asset: any) => (
                     <option key={asset.id} value={asset.id}>
                       {asset.name}
                     </option>
@@ -698,7 +663,7 @@ function App() {
           </div>
 
           <div className="cards">
-            {data.rooms.map((room) => (
+            {data.rooms.map((room: any) => (
               <div className="card" key={room.id}>
                 <h3>{room.name}</h3>
 
@@ -712,12 +677,11 @@ function App() {
           </div>
         </section>
 
-        {/* ИНВЕНТАРЬ */}
         <section className="section">
           <h2>Инвентарь</h2>
 
           <div className="cards">
-            {data.assets.map((asset) => (
+            {data.assets.map((asset: any) => (
               <div className="card" key={asset.id}>
                 <h3>{asset.name}</h3>
 
@@ -731,7 +695,6 @@ function App() {
           </div>
         </section>
 
-        {/* БРОНИРОВАНИЯ */}
         <section className="section">
           <h2>Бронирования</h2>
 
@@ -741,7 +704,7 @@ function App() {
             <p>По заданным фильтрам бронирований не найдено.</p>
           ) : (
             <div className="cards">
-              {filteredBookings.map((booking) => (
+              {filteredBookings.map((booking: any) => (
                 <div className="card booking-card" key={booking.id}>
                   <h3>{booking.title}</h3>
 
@@ -778,6 +741,3 @@ function App() {
       </main>
     </div>
   );
-}
-
-export default App;
