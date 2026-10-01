@@ -5,7 +5,7 @@ import { Container, Box } from "@mui/material";
 import { Header } from "./components/Header";
 import { RoomTable } from "./components/RoomTable";
 
-export default function App() {
+export function App() {
   return (
     <>
       <Header
@@ -21,7 +21,7 @@ export default function App() {
     </>
   );
 }
-
+export default App;
 
 function App() {
   const [data, setData] = useState(() => {
