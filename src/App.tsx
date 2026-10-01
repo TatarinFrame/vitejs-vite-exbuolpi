@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { initialData } from './data/initialData';
 import './App.css';
-
-import { Container, Box } from "@mui/material";
+import type { NavItem } from "./header.types";
+import { Box } from "@mui/material";
 import { Header } from "./components/Header";
 import { RoomTable } from "./components/RoomTable";
+
+type Page = 'catalog' | 'bookings' | 'settings';
 
 export default function App() {
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('room-assets-data');
     return saved ? JSON.parse(saved) : initialData;
   });
+
+  const [page, setPage] = useState<Page>('catalog');
 
   const [showForm, setShowForm] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
@@ -249,7 +253,7 @@ export default function App() {
       return;
     }
 
-    const hasConflict = data.bookings.some((booking: any) => {
+    const conflictingBookings = data.bookings.filter((booking: any) => {
       if (booking.id === editingBookingId) return false;
       if (booking.resourceType !== resourceType) return false;
       if (booking.resourceId !== resourceId) return false;
@@ -262,20 +266,7 @@ export default function App() {
       return newStart < existingEnd && newEnd > existingStart;
     });
 
-    if (hasConflict) {
-      const conflictingBookings = data.bookings.filter((booking: any) => {
-        if (booking.id === editingBookingId) return false;
-        if (booking.resourceType !== resourceType) return false;
-        if (booking.resourceId !== resourceId) return false;
-
-        const existingStart = new Date(booking.start).getTime();
-        const existingEnd = new Date(booking.end).getTime();
-        const newStart = startDate.getTime();
-        const newEnd = endDate.getTime();
-
-        return newStart < existingEnd && newEnd > existingStart;
-      });
-
+    if (conflictingBookings.length > 0) {
       const conflictText = conflictingBookings
         .map((booking: any) => {
           const startText = new Date(booking.start).toLocaleString();
@@ -348,228 +339,246 @@ export default function App() {
   return (
     <div className="app">
       <Header
-        activeNavId="catalog"
-        onNavigate={(id) => console.log("goto", id)}
-        onBellClick={() => console.log("bell")}
+        activeNavId={page}
+        onNavigate={(id) => setPage(id as Page)}
+        onBellClick={() => alert('Новых уведомлений нет')}
       />
 
       <main className="container">
-        <Box sx={{ my: 3 }}>
-        <RoomTable/>
-        </Box>
+        {/* ===== Каталог аудиторий ===== */}
+        {page === 'catalog' && (
+          <Box sx={{ my: 3 }}>
+            <RoomTable />
+          </Box>
+        )}
 
-        <div className="top-actions" style={{ display: 'flex', gap: '10px' }}>
-          <button className="primary-button" onClick={() => setShowForm(true)}>
-            + Добавить бронирование
-          </button>
-          <button className="secondary-button" onClick={handleExportJSON}>
-            Экспорт JSON
-          </button>
-          <button
-            className="secondary-button"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Импорт JSON
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            style={{ display: 'none' }}
-            onChange={handleImportJSON}
-          />
-        </div>
+        {/* ===== Управление бронированием ===== */}
+        {page === 'bookings' && (
+          <>
+            <div className="top-actions" style={{ display: 'flex', gap: '10px' }}>
+              <button className="primary-button" onClick={() => setShowForm(true)}>
+                + Добавить бронирование
+              </button>
+            </div>
 
-        {showForm && (
-          <section className="booking-form">
-            <h2>
-              {editingBookingId
-                ? 'Редактирование бронирования'
-                : 'Новое бронирование'}
-            </h2>
+            {showForm && (
+              <section className="booking-form">
+                <h2>
+                  {editingBookingId
+                    ? 'Редактирование бронирования'
+                    : 'Новое бронирование'}
+                </h2>
 
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Тип ресурса</label>
-                <select
-                  value={resourceType}
-                  onChange={(e) =>
-                    handleResourceTypeChange(e.target.value as 'room' | 'asset')
-                  }
-                >
-                  <option value="room">Помещение</option>
-                  <option value="asset">Инвентарь</option>
-                </select>
-              </div>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Тип ресурса</label>
+                    <select
+                      value={resourceType}
+                      onChange={(e) =>
+                        handleResourceTypeChange(e.target.value as 'room' | 'asset')
+                      }
+                    >
+                      <option value="room">Помещение</option>
+                      <option value="asset">Инвентарь</option>
+                    </select>
+                  </div>
 
-              <div className="form-group">
-                <label>Ресурс</label>
-                <select
-                  value={resourceId}
-                  onChange={(e) => setResourceId(e.target.value)}
-                >
-                  {resourceType === 'room'
-                    ? data.rooms.map((room: any) => (
+                  <div className="form-group">
+                    <label>Ресурс</label>
+                    <select
+                      value={resourceId}
+                      onChange={(e) => setResourceId(e.target.value)}
+                    >
+                      {resourceType === 'room'
+                        ? data.rooms.map((room: any) => (
+                            <option key={room.id} value={room.id}>
+                              {room.name}
+                            </option>
+                          ))
+                        : data.assets.map((asset: any) => (
+                            <option key={asset.id} value={asset.id}>
+                              {asset.name}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Название</label>
+                    <input
+                      type="text"
+                      placeholder="Например: Семинар"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Начало</label>
+                    <input
+                      type="datetime-local"
+                      value={start}
+                      onChange={(e) => setStart(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Окончание</label>
+                    <input
+                      type="datetime-local"
+                      value={end}
+                      onChange={(e) => setEnd(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Примечание</label>
+                    <textarea
+                      placeholder="Дополнительная информация"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button className="primary-button" onClick={handleCreateBooking}>
+                    {editingBookingId ? 'Сохранить изменения' : 'Создать бронирование'}
+                  </button>
+                  <button
+                    className="secondary-button"
+                    onClick={() => {
+                      resetForm();
+                      setEditingBookingId(null);
+                      setShowForm(false);
+                    }}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <section className="section">
+              <h2>Бронирования</h2>
+              <div className="filters">
+                <div className="filter-group">
+                  <label>Поиск</label>
+                  <input
+                    type="text"
+                    placeholder="Название или примечание..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+
+                <div className="filter-group">
+                  <label>Ресурс</label>
+                  <select
+                    value={filterResource}
+                    onChange={(e) => setFilterResource(e.target.value)}
+                  >
+                    <option value="all">Все ресурсы</option>
+                    <optgroup label="Помещения">
+                      {data.rooms.map((room: any) => (
                         <option key={room.id} value={room.id}>
                           {room.name}
                         </option>
-                      ))
-                    : data.assets.map((asset: any) => (
+                      ))}
+                    </optgroup>
+                    <optgroup label="Инвентарь">
+                      {data.assets.map((asset: any) => (
                         <option key={asset.id} value={asset.id}>
                           {asset.name}
                         </option>
                       ))}
-                </select>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <label>Дата</label>
+                  <input
+                    type="date"
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    setSearch('');
+                    setFilterResource('all');
+                    setFilterDate('');
+                  }}
+                >
+                  Сбросить
+                </button>
               </div>
 
-              <div className="form-group">
-                <label>Название</label>
-                <input
-                  type="text"
-                  placeholder="Например: Семинар"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
+              {data.bookings.length === 0 ? (
+                <p>Пока нет бронирований</p>
+              ) : filteredBookings.length === 0 ? (
+                <p>По заданным фильтрам бронирований не найдено.</p>
+              ) : (
+                <div className="cards">
+                  {filteredBookings.map((booking: any) => (
+                    <div className="card booking-card" key={booking.id}>
+                      <h3>{booking.title}</h3>
+                      <p>
+                        Ресурс: <strong>{booking.resourceId}</strong>
+                      </p>
+                      <p>Начало: {new Date(booking.start).toLocaleString()}</p>
+                      <p>Окончание: {new Date(booking.end).toLocaleString()}</p>
+                      {booking.notes && <p>Примечание: {booking.notes}</p>}
 
-              <div className="form-group">
-                <label>Начало</label>
-                <input
-                  type="datetime-local"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                />
-              </div>
+                      <div className="booking-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() => handleEditBooking(booking)}
+                        >
+                          Редактировать
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDeleteBooking(booking.id)}
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        )}
 
-              <div className="form-group">
-                <label>Окончание</label>
-                <input
-                  type="datetime-local"
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Примечание</label>
-                <textarea
-                  placeholder="Дополнительная информация"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button className="primary-button" onClick={handleCreateBooking}>
-                {editingBookingId ? 'Сохранить изменения' : 'Создать бронирование'}
+        {/* ===== Настройки ===== */}
+        {page === 'settings' && (
+          <section className="section">
+            <h2>Настройки</h2>
+            <div className="top-actions" style={{ display: 'flex', gap: '10px' }}>
+              <button className="secondary-button" onClick={handleExportJSON}>
+                Экспорт JSON
               </button>
               <button
                 className="secondary-button"
-                onClick={() => {
-                  resetForm();
-                  setShowForm(false);
-                }}
+                onClick={() => fileInputRef.current?.click()}
               >
-                Отмена
+                Импорт JSON
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={handleImportJSON}
+              />
             </div>
           </section>
         )}
-
-        <section className="section">
-          <h2>Бронирования</h2>
-          <div className="filters">
-            <div className="filter-group">
-              <label>Поиск</label>
-              <input
-                type="text"
-                placeholder="Название или примечание..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Ресурс</label>
-              <select
-                value={filterResource}
-                onChange={(e) => setFilterResource(e.target.value)}
-              >
-                <option value="all">Все ресурсы</option>
-                <optgroup label="Помещения">
-                  {data.rooms.map((room: any) => (
-                    <option key={room.id} value={room.id}>
-                      {room.name}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Инвентарь">
-                  {data.assets.map((asset: any) => (
-                    <option key={asset.id} value={asset.id}>
-                      {asset.name}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label>Дата</label>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-              />
-            </div>
-
-            <button
-              className="secondary-button"
-              onClick={() => {
-                setSearch('');
-                setFilterResource('all');
-                setFilterDate('');
-              }}
-            >
-              Сбросить
-            </button>
-          </div>
-
-          {data.bookings.length === 0 ? (
-            <p>Пока нет бронирований</p>
-          ) : filteredBookings.length === 0 ? (
-            <p>По заданным фильтрам бронирований не найдено.</p>
-          ) : (
-            <div className="cards">
-              {filteredBookings.map((booking: any) => (
-                <div className="card booking-card" key={booking.id}>
-                  <h3>{booking.title}</h3>
-                  <p>
-                    Ресурс: <strong>{booking.resourceId}</strong>
-                  </p>
-                  <p>Начало: {new Date(booking.start).toLocaleString()}</p>
-                  <p>Окончание: {new Date(booking.end).toLocaleString()}</p>
-                  {booking.notes && <p>Примечание: {booking.notes}</p>}
-
-                  <div className="booking-actions">
-                    <button
-                      className="edit-button"
-                      onClick={() => handleEditBooking(booking)}
-                    >
-                      Редактировать
-                    </button>
-                    <button
-                      className="delete-button"
-                      onClick={() => handleDeleteBooking(booking.id)}
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </main>
     </div>
   );

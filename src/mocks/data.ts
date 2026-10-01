@@ -1,4 +1,4 @@
-import type { RoomsResponseDto } from "@/api/roomsApi";
+import type { RoomsResponseDto } from "../api/roomsApi";
 export const roomsPayload: RoomsResponseDto = {
  items: [
  { id: "201", code: "201", name: "Конференц-зал", capacity: 50, equipment:

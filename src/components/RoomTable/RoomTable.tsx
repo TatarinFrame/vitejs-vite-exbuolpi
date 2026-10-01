@@ -87,17 +87,20 @@ export function RoomTable() {
                 <Typography fontWeight={600}>{r.name}</Typography>
               </TableCell>
               <TableCell align="right">
-                <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
-                  <Groups2Outlined fontSize="small" />
-                  <span>{r.capacity}</span>
-                </Stack>
+              <Stack
+  direction="row"
+  sx={{ gap: 1, justifyContent: "flex-end", alignItems: "center" }}
+>
+  <Groups2Outlined fontSize="small" />
+  <span>{r.capacity}</span>
+</Stack>
               </TableCell>
               <TableCell>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                  {r.equipment.map((k) => (
-                    <Chip key={k} label={EQUIP_LABEL[k] ?? k} size="small" variant="outlined" />
-                  ))}
-                </Stack>
+              <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap" }}>
+  {(r.equipment ?? []).map((k) => (
+    <Chip key={k} label={EQUIP_LABEL[k] ?? k} size="small" variant="outlined" />
+  ))}
+</Stack>
               </TableCell>
               <TableCell>
                 <Chip
@@ -115,7 +118,7 @@ export function RoomTable() {
                   <EditOutlined fontSize="small" />
                 </IconButton>
                 <IconButton size="small" color="error" title="Удалить">
-                  <DeleteOutline fontSize="small" />
+                <DeleteOutlined fontSize="small" />
                 </IconButton>
               </TableCell>
             </TableRow>

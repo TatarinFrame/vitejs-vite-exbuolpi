@@ -1,23 +1,13 @@
 import { http } from "./http";
-
-export type RoomStatus = "available" | "booked" | "maintenance";
-
-export interface RoomDto {
-  id: string;
-  code: string;
-  name: string;
-  capacity: number;
-  equipment: string[];
-  status: RoomStatus;
-}
-
-export interface RoomsResponseDto {
-  items: RoomDto[];
-  page: number;
-  total: number;
-}
+import { roomsPayload } from "../mocks/data";
 
 export async function fetchRooms(page = 1): Promise<RoomsResponseDto> {
-  const { data } = await http.get<RoomsResponseDto>("/rooms", { params: { page } });
-  return data;
+  try {
+    const { data } = await http.get<RoomsResponseDto>("/rooms", { params: { page } });
+    if (data && Array.isArray(data.items)) return data;
+    console.warn("/api/rooms вернул не JSON — используются локальные данные");
+  } catch (e) {
+    console.warn("/api/rooms недоступен — используются локальные данные", e);
+  }
+  return { ...roomsPayload, page };
 }
