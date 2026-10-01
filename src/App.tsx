@@ -355,7 +355,7 @@ export default function App() {
 
       <main className="container">
         <Box sx={{ my: 3 }}>
-        <div>Таблица грузится...</div>
+        <RoomTable/>
         </Box>
 
         <div className="top-actions" style={{ display: 'flex', gap: '10px' }}>
